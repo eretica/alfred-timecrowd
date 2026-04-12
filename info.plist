@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.timecrowd.alfred</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>run-action</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>notification</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>script-filter-main</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>run-action</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>eretica</string>
+	<key>description</key>
+	<string>TimeCrowd time tracking from Alfred</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>TimeCrowd</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>2</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>tc</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>TimeCrowdに接続中...</string>
+				<key>script</key>
+				<string>h="Authorization: Bearer $access_token"
+cache="$alfred_workflow_cache/tasks.json"
+active="$alfred_workflow_cache/active.json"
+cats="$alfred_workflow_cache/categories.json"
+mkdir -p "$alfred_workflow_cache"
+if [ ! -f "$cache" ] || [ $(($(date +%s) - $(stat -f %m "$cache" 2>/dev/null || echo 0))) -gt 60 ]; then
+  curl -s -m 5 -H "$h" "https://timecrowd.net/api/v1/tasks?sort=user_usage&amp;limit=25" > "$cache"
+fi
+if [ ! -f "$cats" ] || [ $(($(date +%s) - $(stat -f %m "$cats" 2>/dev/null || echo 0))) -gt 300 ]; then
+  curl -s -m 5 -H "$h" "https://timecrowd.net/api/v1/categories" > "$cats.tmp" &amp;&amp; mv "$cats.tmp" "$cats" &amp;
+fi
+curl -s -m 2 -H "$h" "https://timecrowd.net/api/v2/user" > "$active.tmp" &amp;&amp; mv "$active.tmp" "$active" &amp;
+/usr/bin/python3 "$PWD/main.py" "{query}" "$active" &lt; "$cache"</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>TimeCrowd 打刻管理</string>
+				<key>title</key>
+				<string>TimeCrowd</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>script-filter-main</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>export PYTHONPATH="$PWD"
+/usr/bin/python3 "$PWD/action.py" "{query}"</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>run-action</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<true/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>{query}</string>
+				<key>title</key>
+				<string>TimeCrowd</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>notification</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string>TimeCrowd Alfred Workflow - 打刻をワンアクションで操作
+
+使い方:
+  tc            → タスク一覧（打刻中なら先頭に表示）
+  tc [検索]     → タスク名でフィルタ
+  tc [自由入力] → 新規タスクとして打刻開始
+  tc config     → デフォルトカテゴリを設定</string>
+	<key>uidata</key>
+	<dict>
+		<key>notification</key>
+		<dict>
+			<key>xpos</key>
+			<real>700</real>
+			<key>ypos</key>
+			<real>200</real>
+		</dict>
+		<key>run-action</key>
+		<dict>
+			<key>xpos</key>
+			<real>400</real>
+			<key>ypos</key>
+			<real>200</real>
+		</dict>
+		<key>script-filter-main</key>
+		<dict>
+			<key>xpos</key>
+			<real>100</real>
+			<key>ypos</key>
+			<real>200</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string></string>
+				<key>placeholder</key>
+				<string>TimeCrowd OAuth Access Token</string>
+				<key>required</key>
+				<true/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string>TimeCrowdのOAuthアクセストークンを入力してください</string>
+			<key>label</key>
+			<string>Access Token</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>access_token</string>
+		</dict>
+	</array>
+	<key>variables</key>
+	<dict>
+		<key>access_token</key>
+		<string></string>
+	</dict>
+	<key>version</key>
+	<string>1.0.0</string>
+	<key>webaddress</key>
+	<string>https://timecrowd.net</string>
+</dict>
+</plist>
