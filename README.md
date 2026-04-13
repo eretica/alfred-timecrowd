@@ -1,8 +1,12 @@
 # TimeCrowd Alfred Workflow
 
+<p align="center">
+<img height="280" alt="検索結果と操作インターフェース" src="https://github.com/user-attachments/assets/9b171b0b-79ed-42ad-a06f-5ce4427ebbf8" />
+</p> 
+
 Alfred から [TimeCrowd](https://timecrowd.net) の打刻をワンアクションで操作できるワークフロー。
 
-<img width="1536" height="1024" alt="検索結果と操作インターフェース" src="https://github.com/user-attachments/assets/9b171b0b-79ed-42ad-a06f-5ce4427ebbf8" />
+ 
 
 ## 機能
 
