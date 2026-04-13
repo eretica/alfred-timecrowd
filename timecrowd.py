@@ -43,7 +43,7 @@ class TimeCrowdAPI:
 
     def search_tasks(self, query: str) -> list:
         encoded = urllib.parse.quote(query)
-        return self._request("GET", f"/search/tasks?q={encoded}")
+        return self._request("GET", f"/search/tasks?title={encoded}")
 
     def start_task(self, team_id: str, task_id: str) -> dict:
         tid = urllib.parse.quote(str(team_id), safe="")

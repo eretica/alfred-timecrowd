@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""stdin: キャッシュ済みタスクJSON, argv[1]: query, argv[2]: active entry JSONファイルパス"""
+"""stdin: キャッシュ済みタスクJSON, argv[1]: query, argv[2]: active entry JSONパス, argv[3]: 検索結果JSONパス"""
 import json
 import sys
 import os
@@ -8,6 +8,31 @@ import os
 def fmt_dur(sec):
     h, m = int(sec) // 3600, (int(sec) % 3600) // 60
     return f"{h}h {m:02d}m" if h else f"{m}m"
+
+
+def parse_tasks(data):
+    """APIレスポンスからタスクリストを抽出（形式差異を吸収）"""
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        for key in ("tasks", "results", "data"):
+            if key in data and isinstance(data[key], list):
+                return data[key]
+    return []
+
+
+def task_to_item(t):
+    """タスクオブジェクトからAlfred itemを生成（フラット/ネスト両対応）"""
+    tid = str(t.get("id", ""))
+    title = t.get("title", "")
+    team_id = t.get("team_id", "") or (t.get("team") or {}).get("id", "")
+    cat = (t.get("category") or {}).get("title", "")
+    return tid, {
+        "title": title,
+        "subtitle": f"カテゴリ: {cat}" if cat else "",
+        "arg": f"switch:{team_id}:{tid}:{title}",
+        "valid": True,
+    }
 
 
 def do_config():
@@ -36,6 +61,7 @@ def do_config():
 def main():
     query = sys.argv[1].strip() if len(sys.argv) > 1 else ""
     active_path = sys.argv[2] if len(sys.argv) > 2 else ""
+    search_path = sys.argv[3] if len(sys.argv) > 3 else ""
 
     # config コマンドは早期リターン
     if query.lower() == "config":
@@ -75,30 +101,48 @@ def main():
     if not active_loaded and not query:
         items.append({"title": "打刻状態を確認中...", "valid": False})
 
-    # タスク一覧
-    tasks = []
+    # キャッシュ済みタスク一覧
+    cached_tasks = []
     try:
-        data = json.loads(raw)
-        tasks = data.get("tasks", []) if isinstance(data, dict) else data
+        cached_tasks = parse_tasks(json.loads(raw))
     except Exception:
         pass
 
+    # API検索結果
+    search_results = []
+    if query and search_path and os.path.exists(search_path):
+        try:
+            with open(search_path) as f:
+                search_results = parse_tasks(json.loads(f.read()))
+        except (json.JSONDecodeError, ValueError):
+            pass
+
     q = query.lower()
-    for t in tasks:
+    seen_ids = set()
+
+    # 検索結果を優先表示
+    for t in search_results:
+        tid, item = task_to_item(t)
+        if tid:
+            seen_ids.add(tid)
+        items.append(item)
+
+    # キャッシュからフィルタ（検索結果と重複しないもの）
+    for t in cached_tasks:
+        tid, item = task_to_item(t)
+        if tid in seen_ids:
+            continue
         title = t.get("title", "")
         cat = (t.get("category") or {}).get("title", "")
         if q and q not in title.lower() and q not in cat.lower():
             continue
-        items.append({
-            "title": title,
-            "subtitle": f"カテゴリ: {cat}" if cat else "",
-            "arg": f"switch:{t.get('team_id', '')}:{t.get('id', '')}:{title}",
-            "valid": True,
-        })
+        seen_ids.add(tid)
+        items.append(item)
 
     # 自由入力
     if query:
-        exact = any(t.get("title", "").lower() == q for t in tasks)
+        all_tasks = cached_tasks + search_results
+        exact = any(t.get("title", "").lower() == q for t in all_tasks)
         if not exact:
             items.append({
                 "title": f"「{query}」で新規打刻開始",
